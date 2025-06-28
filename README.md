@@ -1,4 +1,3 @@
-Just made this, cuz i was lazy to find one on the web.
+Conversor de Py pra EXE.
 
-
-(maded using AI)
+Fiz com a ajuda do meu mano Brown (Inteligencia artificial)
