@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
+from tkinter import ttk
+import sv_ttk  # Tema moderno para Tkinter
 import subprocess
 import threading
 import os
@@ -8,37 +10,42 @@ from pyinstaller_config import PyInstallerConfig
 class PyInstallerGUI(tk.Tk):
     def __init__(self):
         super().__init__()
-        # Black version (dark mode)
         self.title("🔥 PyInstaller GUI Builder")
         self.geometry("650x700")
-        self.configure(bg="#111")  # Black background
-        self.option_add("*Font", ("Courier New", 10, "bold"))
-        self.option_add("*Button.Background", "#222")
-        self.option_add("*Button.Foreground", "#0ff")
-        self.option_add("*Button.Relief", "raised")
-        self.option_add("*Button.BorderWidth", 3)
-        self.option_add("*Entry.Background", "#222")
-        self.option_add("*Entry.Foreground", "#fff")
-        self.option_add("*Entry.Relief", "sunken")
-        self.option_add("*Entry.BorderWidth", 2)
-        self.option_add("*Label.Background", "#111")
-        self.option_add("*Label.Foreground", "#0ff")
-        self.option_add("*Checkbutton.Background", "#111")
-        self.option_add("*Checkbutton.Foreground", "#0ff")
-        self.option_add("*Frame.Background", "#111")
-
+        self.option_add("*Font", ("Segoe UI", 10))
         self.config = PyInstallerConfig()
 
-        # INPUT SCRIPT
-        tk.Label(self, text="Codigo python principal:").pack(anchor="w", padx=10, pady=(10,0))
-        frame_script = tk.Frame(self, relief="groove", borderwidth=3, bg="#222")
-        frame_script.pack(fill="x", padx=10)
-        self.script_entry = tk.Entry(frame_script, bg="#222", fg="#fff", insertbackground="#0ff")
-        self.script_entry.pack(side="left", fill="x", expand=True, padx=(0,5), pady=3)
-        tk.Button(frame_script, text="Selecionar", command=self.select_script, bg="#222", fg="#0ff", activebackground="#333", activeforeground="#fff").pack(side="right", pady=3)
+        # Aplica tema moderno escuro
+        self.style = ttk.Style(self)
+        sv_ttk.set_theme("dark")
 
-        # OPTIONS
-        self.opt_frame = tk.LabelFrame(self, text="Opções", relief="ridge", borderwidth=3, padx=5, pady=5, bg="#111", fg="#0ff")
+        # Função para adicionar tooltips
+        def add_tooltip(widget, text):
+            def on_enter(e):
+                self.tooltip = tk.Toplevel(widget)
+                self.tooltip.wm_overrideredirect(True)
+                self.tooltip.wm_geometry(f"+{widget.winfo_rootx()+20}+{widget.winfo_rooty()+20}")
+                label = tk.Label(self.tooltip, text=text, background="#222", foreground="#0ff", relief="solid", borderwidth=1, font=("Segoe UI", 9))
+                label.pack(ipadx=4, ipady=2)
+            def on_leave(e):
+                if hasattr(self, 'tooltip'):
+                    self.tooltip.destroy()
+            widget.bind("<Enter>", on_enter)
+            widget.bind("<Leave>", on_leave)
+
+        # INPUT SCRIPT
+        ttk.Label(self, text="Arquivo Python principal:").pack(anchor="w", padx=10, pady=(10,0))
+        frame_script = ttk.Frame(self)
+        frame_script.pack(fill="x", padx=10)
+        self.script_entry = ttk.Entry(frame_script)
+        self.script_entry.pack(side="left", fill="x", expand=True, padx=(0,5), pady=3)
+        btn_script = ttk.Button(frame_script, text="Selecionar", command=self.select_script)
+        btn_script.pack(side="right", pady=3)
+        add_tooltip(self.script_entry, "Selecione o arquivo principal do seu projeto Python.")
+        add_tooltip(btn_script, "Clique para escolher o arquivo .py principal.")
+
+        # OPÇÕES
+        self.opt_frame = ttk.LabelFrame(self, text="Opções", padding=(5,5))
         self.opt_frame.pack(fill="x", padx=10, pady=5)
 
         self.onefile = tk.BooleanVar(value=True)
@@ -47,35 +54,44 @@ class PyInstallerGUI(tk.Tk):
         self.clean = tk.BooleanVar(value=True)
         self.noupx = tk.BooleanVar()
 
-        for text, var in [
-            ("--onefile", self.onefile),
-            ("--windowed", self.windowed),
-            ("--noconfirm", self.noconfirm),
-            ("--clean", self.clean),
-            ("--noupx", self.noupx),
+        for text, var, dica in [
+            ("--onefile", self.onefile, "Gera um único arquivo .exe"),
+            ("--windowed", self.windowed, "Sem console ao abrir o .exe"),
+            ("--noconfirm", self.noconfirm, "Não pede confirmação para sobrescrever arquivos"),
+            ("--clean", self.clean, "Limpa pastas temporárias antes de compilar"),
+            ("--noupx", self.noupx, "Não usa UPX para compactação"),
         ]:
-            tk.Checkbutton(self.opt_frame, text=text, variable=var, anchor="w", padx=10, bg="#111", fg="#0ff", selectcolor="#222").pack(anchor="w")
+            chk = ttk.Checkbutton(self.opt_frame, text=text, variable=var)
+            chk.pack(anchor="w", padx=10)
+            add_tooltip(chk, dica)
 
-        # Name
-        tk.Label(self, text="--name (nome do .exe):").pack(anchor="w", padx=10)
-        self.name_entry = tk.Entry(self, width=30, bg="#222", fg="#fff", insertbackground="#0ff")
+        # NOME
+        ttk.Label(self, text="--name (nome do .exe):").pack(anchor="w", padx=10)
+        self.name_entry = ttk.Entry(self, width=30)
         self.name_entry.pack(fill="x", padx=10, pady=3)
+        add_tooltip(self.name_entry, "Nome do arquivo .exe gerado.")
 
-        # Icon
-        tk.Label(self, text="--icon (.ico):").pack(anchor="w", padx=10, pady=(10,0))
-        frame_icon = tk.Frame(self, relief="groove", borderwidth=2, bg="#222")
+        # ÍCONE
+        ttk.Label(self, text="--icon (.ico):").pack(anchor="w", padx=10, pady=(10,0))
+        frame_icon = ttk.Frame(self)
         frame_icon.pack(fill="x", padx=10)
-        self.icon_entry = tk.Entry(frame_icon, bg="#222", fg="#fff", insertbackground="#0ff")
+        self.icon_entry = ttk.Entry(frame_icon)
         self.icon_entry.pack(side="left", fill="x", expand=True, padx=(0,5), pady=3)
-        tk.Button(frame_icon, text="Selecionar", command=self.select_icon, bg="#222", fg="#0ff", activebackground="#333", activeforeground="#fff").pack(side="right", pady=3)
+        btn_icon = ttk.Button(frame_icon, text="Selecionar", command=self.select_icon)
+        btn_icon.pack(side="right", pady=3)
+        add_tooltip(self.icon_entry, "Caminho para o arquivo .ico do ícone.")
+        add_tooltip(btn_icon, "Clique para escolher o ícone .ico.")
 
         # ADD DATA
-        tk.Label(self, text="--add-data (arquivos/pastas extras):").pack(anchor="w", padx=10)
-        frame_data = tk.Frame(self, relief="groove", borderwidth=2, bg="#222")
+        ttk.Label(self, text="--add-data (arquivos/pastas extras):").pack(anchor="w", padx=10)
+        frame_data = ttk.Frame(self)
         frame_data.pack(fill="x", padx=10)
-        self.data_entry = tk.Entry(frame_data, bg="#222", fg="#fff", insertbackground="#0ff")
+        self.data_entry = ttk.Entry(frame_data)
         self.data_entry.pack(side="left", fill="x", expand=True, padx=(0,5), pady=3)
-        tk.Button(frame_data, text="Adicionar", command=self.add_data, bg="#222", fg="#0ff", activebackground="#333", activeforeground="#fff").pack(side="right", pady=3)
+        btn_data = ttk.Button(frame_data, text="Adicionar", command=self.add_data)
+        btn_data.pack(side="right", pady=3)
+        add_tooltip(self.data_entry, "Arquivos ou pastas adicionais para incluir no .exe.")
+        add_tooltip(btn_data, "Clique para adicionar arquivos/pastas extras.")
 
         # HIDDEN IMPORTS
         tk.Label(self, text="--hidden-import (módulos ocultos):").pack(anchor="w", padx=10)
